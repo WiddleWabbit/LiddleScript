@@ -1,0 +1,5 @@
+# Ignore all Logs
+logs/*
+
+# Dont ignore log directory
+!logs/

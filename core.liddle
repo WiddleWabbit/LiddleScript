@@ -1,0 +1,151 @@
+#!/bin/bash
+
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/root/scripts/working/Liddle
+
+#   ------------------------------------------------------------------
+#                               * * *
+#                           Liddle Script
+#                               * * *
+#   -------------------------------------------------------------------
+#                               * * *  
+#                     Begin Main Script Variables
+#                               * * * 
+#   -------------------------------------------------------------------
+
+declare -A core
+declare -A vars
+declare -A args
+
+#   Program name
+core[PROGNAME]=$(basename $0)
+#   Directory script is being run from 
+core[USRDIR]=$(pwd)"/"
+#   Directory of script
+core[DIR]="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )""/""logs/"
+#   Store new arguments given to script in array
+NEWARGS=("${@}")
+#   Will be used to store number of arguments not options given to the script
+core[ARGNUM]=""
+#   Used for counters in script
+core[COUNT]=0
+#   Argument 1 Given to Script
+core[ARG1]=$1
+#   Logfile name
+core[LOG]="${core[DIR]}${core[PROGNAME]}.log"
+#   Pipe name
+core[PIPE]="${core[DIR]}${core[PROGNAME]}.pipe"
+#   Set initial endphase variable
+core[ENDPHASE]="false"
+#   Has the script finished the getState function yet
+#   I.E. are the CMD and PHASE variables accurate
+core[EXECUTION]="false"
+#   Has the script began logging yet
+#   THIS ARGUMENT MUST BE RESET TO FALSE EACH RUN OF THE SCRIPT
+#   AS THE VALUE IS NOT CHANGED TO FALSE UNTIL AFTER SAVING OF VARS 
+core[LOGGING]="false"
+#   Execution argument given or not 
+core[EXARG]="false"
+#   PHASE Variable Default
+core[PHASE]=1
+#   CMD Variable Default
+core[CMD]=1
+
+#   -------------------------------------------------------------------
+#                               * * *
+#                     End Main Script Variables
+#                               * * *
+#   -------------------------------------------------------------------
+
+#   -------------------------------------------------------------------
+#                               * * *
+#                       Begin Script Functions
+#                               * * *
+#   -------------------------------------------------------------------
+
+function cleanUp {
+
+#           --------------------------------------------------
+#                     Function to remove old files
+#                     Ignores any arguments given
+#           --------------------------------------------------
+
+    if [ -e "${core[DIR]}${core[PROGNAME]}.end" ]; then
+
+        rm -f "${core[DIR]}${core[PROGNAME]}.end"
+
+    fi
+
+    if [ -e "${core[DIR]}${core[PROGNAME]}.log" ]; then
+
+        rm -f "${core[DIR]}${core[PROGNAME]}.log"
+
+    fi
+    if [ -e "${core[PIPE]}" ]; then
+        rm -f "${core[PIPE]}"
+    fi
+
+}
+
+function trapped {
+
+#           --------------------------------------------------
+#                    Function for Trapping Interupts
+#                      Ignores any arguments given
+#           --------------------------------------------------
+
+    errorExit ${core[CMD]} ${core[LINENO]} "Script terminated by user"
+    
+}
+
+. /root/scripts/Liddle/save.liddle
+. /root/scripts/Liddle/logging.liddle
+. /root/scripts/Liddle/error.liddle
+. /root/scripts/Liddle/args.liddle
+. /root/scripts/Liddle/load.liddle
+
+#   -------------------------------------------------------------------
+#                               * * *
+#                            Begin Traps
+#                               * * *
+#   -------------------------------------------------------------------
+
+#   Trap to watch for interupt, runs trapped function
+trap trapped SIGHUP SIGINT SIGTERM
+
+
+#   -------------------------------------------------------------------
+#                               * * *
+#                             End Traps
+#                               * * *
+#   -------------------------------------------------------------------
+
+core[EXECUTION]="true"
+
+processArgs
+
+if [ "${loadfile}" == "true" ]; then
+    echo "Fetching progress from file"
+    . ${core[DIR]}${core[PROGNAME]}.end || errorExit ${core[CMD]} $LINENO "Failed to load"
+    startLog continue
+    echo "Continuing from prior exit"
+    echo
+    sleep 1
+else
+    # Start log and override
+    startLog
+fi
+
+while [ ${core[ENDPHASE]} == false ]; do
+    case ${core[PHASE]} in
+        1) phase1
+           core[CMD]=1
+           ;;
+        2) core[ENDPHASE]=true ;;
+    esac
+    ((core[PHASE]++))
+done
+
+# Stop Logging
+endLog
+# Cleanup the log and any other files left
+cleanUp

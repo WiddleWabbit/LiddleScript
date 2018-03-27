@@ -1,0 +1,67 @@
+#!/bin/bash
+
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/root/scripts/working/Liddle
+
+function errorExit {
+
+#           --------------------------------------------------
+#                  Function for exit due to fatal error
+#         Requires 3 Arguments, CMD Number, Line number and error
+#           --------------------------------------------------
+
+    echo ""
+    echo "---------------------------------------------------"
+    echo "                    FATAL ERROR                    "
+    echo "---------------------------------------------------"
+    echo ""
+    echo "Script File: ${core[PROGNAME]}"
+    echo "Script Line: ${2}"
+    echo "Error: ${3:-"Unknown Error"}" 1>&2
+
+    # If the save file already exists we need to replace it
+    if [ -e "${core[DIR]}${core[PROGNAME]}.end" ]; then
+
+        echo ""
+        rm -f "${core[DIR]}${core[PROGNAME]}.end" || echo "Error could not replace prior save"        
+
+    fi
+    
+    # Only save progress if the script has actually started
+    if [ ${core[EXECUTION]} == "true" ]; then
+
+        # If the save file already exists we need to replace it
+        if [ -e "${core[DIR]}${core[PROGNAME]}.end" ]; then
+
+            echo ""
+            rm -f "${core[DIR]}${core[PROGNAME]}.end" || echo "Error could not replace prior save"
+
+        fi
+
+        save
+
+    # The script has not started yet so we don't need to save variables
+    else
+
+        echo ""
+        echo "Progress not saved"
+        echo "Script progress variables not yet set"
+        echo ""
+
+    fi
+
+    if [ ${core[LOGGING]} == "true" ]; then
+
+        echo "Ending Log ----------------------------------------"; endLog || echo "Failed to stop logging"
+        echo "Exiting..."
+
+    else
+
+        echo "Logging not running..."
+        echo "Exiting -------------------------------------------"
+
+    fi
+    echo ""
+    exit 1
+
+}
+

@@ -1,0 +1,60 @@
+#!/bin/bash
+
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/root/scripts/working/Liddle
+
+function startLog {
+
+#           --------------------------------------------------
+#                       Function to begin Logging
+#  Can recieve one argument to indicate that the log should be appended
+#           --------------------------------------------------
+
+#   Ensure that the named pipe does not already exist before creating it
+    if [ ! -e ${core[PIPE]} ]; then
+        mkfifo ${core[PIPE]}
+    fi
+
+    # Redirect output of file descriptors 3 and 4 to screen
+    # (default location of file descriptors 1 and 2)
+    exec 3>&1 4>&2
+    
+    # Check to see if the function has had continue passed to it
+    # If it has then append the log rather than overriding
+    # Tee takes from stdin and writes to file $LOG
+    # Tee's stdin will redirect from the $PIPE (Redirection is the capturing of something)
+    # Redirect tees stdout to 3 which is the stdout of the script
+    # & makes this a background process
+    if [ "${1}" == "continue" ]; then
+        tee -a ${core[LOG]} < ${core[PIPE]} >&3 &
+    else
+        tee ${core[LOG]} < ${core[PIPE]} >&3 &
+    fi
+
+    # Save the process id of tee so it can be closed later
+    core[TPID]="${!}"
+
+    # Redirects the stdout (1) of the script to the $PIPE
+    # Also redirects stderr(2) to stdout(1) so they are both redirected
+    exec > ${core[PIPE]} 2>&1
+    # Indicate script has began logging
+    core[LOGGING]="true"
+
+}
+
+function endLog {
+
+#           --------------------------------------------------
+#                        Function to end Logging
+#                      Ignores any arguments given
+#           --------------------------------------------------
+
+    # Restore stdout and stderr to their defaults and close 3 and 4
+    exec 1>&3 3>&- 2>&4 4>&-
+    # Wait until tee has closed, it will close because the named pipe has
+    # no more input connection (previously had through file descriptor 3)
+    wait "${core[TPID]}"
+    # Finally remove the pipe
+    rm ${core[PIPE]}
+    # Script no longer logging
+    core[LOGGING]="false"
+}

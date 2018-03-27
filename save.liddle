@@ -1,0 +1,82 @@
+#!/bin/bash
+
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/root/scripts/working/Liddle
+
+function save {
+
+    save_core=0
+    save_vars=0
+    save_args=0
+
+    # If there are variables in the core variable array
+    if [ ! ${#core[@]} == 0 ]; then
+
+        # Save the Variables
+        for i in ${!core[@]}
+        do
+
+            if [ $save_core == 0 ]; then
+
+                echo "declare -A core" > ${core[DIR]}${core[PROGNAME]}.end
+                echo "core[$i]=\"${core[$i]}\"" >> ${core[DIR]}${core[PROGNAME]}.end
+                save_core=1
+
+            else
+
+                echo "core[$i]=\"${core[$i]}\"" >> ${core[DIR]}${core[PROGNAME]}.end
+
+            fi
+
+        done
+
+    fi
+
+    # If there are variables in the vars array
+    if [ ! ${#vars[@]} == 0 ]; then
+
+        # Save the Normal Variables
+        for i in ${!vars[@]}
+        do
+
+            if [ $save_vars == 0 ]; then
+
+                echo "declare -A vars" >> ${core[DIR]}${core[PROGNAME]}.end
+                echo "vars[$i]=\"${vars[$i]}\"" >> ${core[DIR]}${core[PROGNAME]}.end
+                save_vars=1
+
+            else
+
+                echo "vars[$i]=\"${vars[$i]}\"" >> ${core[DIR]}${core[PROGNAME]}.end
+
+            fi
+
+        done
+
+    fi
+
+    # If there are variables in the args array
+    if [ ! ${#args[@]} == 0 ]; then
+
+        # Save the Normal Variables
+        for i in ${!args[@]}
+        do
+
+            if [ $save_args == 0 ]; then
+
+                echo "declare -A args" >> ${core[DIR]}${core[PROGNAME]}.end
+                echo "args[$i]=\"${args[$i]}\"" >> ${core[DIR]}${core[PROGNAME]}.end
+                save_args=1
+
+            else
+
+                echo "args[$i]=\"${args[$i]}\"" >> ${core[DIR]}${core[PROGNAME]}.end
+
+            fi
+
+        done
+
+    fi
+
+    chmod 755 ${core[DIR]}${core[PROGNAME]}.end
+
+}

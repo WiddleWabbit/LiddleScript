@@ -1,0 +1,104 @@
+#!/bin/bash
+
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/root/scripts/working/Liddle
+
+function processArgs {
+
+    argcounter=0
+
+    # Move into case for each argument if there is a least one argument
+    if [ ! ${NEWARGS[0]} == "" ]; then
+
+    for arg in ${NEWARGS[@]}
+    do
+
+        case $arg in
+        
+            #   help argument given, display help and exit
+            "-h" | "help" | "--help")
+                echo ""
+                echo "---------------------------------------------------------------------"
+                echo "                           LIDDLE SCRIPT                             "
+                echo "---------------------------------------------------------------------"
+                echo ""
+                echo "       Script Description goes here and gives an overview "
+                echo "                   of what the script will do"
+                echo ""
+                echo "                          VALID ARGUMENTS                            "
+                echo "---------------------------------------------------------------------"
+                echo ""
+                echo "     -h | --help"
+                echo "                       Open the scripts help"
+                echo ""
+                echo "     -l | --load"
+                echo "                       Resume script from prior point"
+                echo ""
+                echo "     -c | --cleanup"
+                echo "                       Clean log file and saved progress file"
+                echo ""
+                echo "---------------------------------------------------------------------"
+                echo ""
+                core[EXARG]="true"
+                exit 1
+                ;;
+
+            # cleanup argument given, run cleanUp function and quit
+            "--cleanup" | "--clean" | "-c") cleanUp
+                core[EXARG]="true"
+                exit 1 ;;
+            #   resume argument given, restart with logging and ldfile argument
+            "--load" | "-l")        core[EXARG]="true"
+                loadFile
+                ;;
+            #   If another argument is given but is not a option
+            *)  args[$argcounter]=$arg
+                core[ARGNUM]="${#args[@]}"
+                ((argcounter++)) 
+                ;;
+
+        esac
+
+    done
+
+    if [ -e "${core[DIR]}${core[PROGNAME]}.end" ]; then
+    while :
+        do
+        echo ""
+        echo "A saved progress file exists, would you like to continue from the saved progress?"
+        read -p "This will ignore added arguments (y/n)" core[CONT]
+            if [[ "${core[CONT]}" == "y" ]] || [[ "${core[CONT]}" == "Y" ]]; then
+                loadFile
+            elif [[ "${core[CONT]}" == "n" ]] || [[ "${core[CONT]}" == "N" ]]; then
+                break
+            else
+                echo "Please input a valid answer (y/n)"
+                continue
+            fi
+        break
+        done
+    fi
+
+    # Otherwise there are not arguments so check for a save file
+    else
+
+        # If a save file exists
+        if [ -e "${core[DIR]}${core[PROGNAME]}.end" ]; then
+            while :
+                do
+                echo ""
+                read -p "A saved progress file exists, would you like to continue from the saved progress? (y/n)" core[CONT]
+                if [[ ${core[CONT]} == "y" ]] || [[ ${core[CONT]} == "Y" ]]; then
+                        loadFile
+                    elif [[ ${core[CONT]} == "n" ]] || [[ ${core[CONT]} == "N" ]]; then
+                        break
+                    else
+                        echo "Please input a valid answer (y/n)"
+                        continue
+                    fi
+                break
+            done
+        fi 
+
+    fi
+
+}
